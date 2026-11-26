@@ -1,5 +1,25 @@
 import { db, config } from "hatchable";
-import { createHash, timingSafeEqual, randomUUID, randomBytes, scryptSync } from "node:crypto";
+import * as nc from "node:crypto";
+
+// The Hatchable isolate only exposes a subset of node:crypto (randomUUID, getRandomValues, subtle, createHmac...).
+// No scryptSync / createHash / timingSafeEqual / randomBytes, so hashing uses Web Crypto (SHA-256, PBKDF2).
+const CR = nc.subtle ? nc : globalThis.crypto;
+const enc = new TextEncoder();
+const randomUUID = () => (typeof nc.randomUUID === "function" ? nc.randomUUID() : globalThis.crypto.randomUUID());
+const hex = (buf) => Array.from(new Uint8Array(buf), (x) => x.toString(16).padStart(2, "0")).join("");
+const unhex = (h) => {
+  const s = String(h || "");
+  const a = new Uint8Array(Math.floor(s.length / 2));
+  for (let i = 0; i < a.length; i++) a[i] = parseInt(s.substr(i * 2, 2), 16) || 0;
+  return a;
+};
+const randomHex = (n) => hex(CR.getRandomValues(new Uint8Array(n)));
+const same = (a, b) => {
+  if (a.length !== b.length) return false;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d |= a[i] ^ b[i];
+  return d === 0;
+};
 
 // Handlers return { status, data }; the exported function at the bottom sends it.
 const json = (data, status = 200) => ({ status, data });
@@ -39,7 +59,7 @@ const ENUMS = {
   committee: ["", ...Object.keys(COMM)],
 };
 const TEXT = ["name", "roblox", "rank", "group", "notes", "lastActive", "newRank"];
-const sha = (s) => createHash("sha256").update(String(s)).digest();
+const sha = async (s) => new Uint8Array(await CR.subtle.digest("SHA-256", enc.encode(String(s))));
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const str = (o, p, k, n) => { if (typeof p[k] === "string") o[k] = p[k].trim().slice(0, n); };
@@ -118,20 +138,23 @@ async function loadAll() {
 }
 const pub = (S) => ({ people: S.people, tasks: S.tasks, seats: S.seats, rules: S.rules, decisions: S.decisions, events: S.events });
 
-const hashPw = (pw, salt) => scryptSync(String(pw), salt, 32);
+const hashPw = async (pw, salt) => {
+  const key = await CR.subtle.importKey("raw", enc.encode(String(pw)), "PBKDF2", false, ["deriveBits"]);
+  return new Uint8Array(await CR.subtle.deriveBits({ name: "PBKDF2", salt: enc.encode(String(salt)), iterations: 100000, hash: "SHA-256" }, key, 256));
+};
 async function auth(req) {
   let pw = "";
   try { pw = (await config.get("ADMIN_PASSWORD")) || ""; } catch { pw = ""; }
   const given = hdr(req, "x-admin-password");
   const u = hdr(req, "x-user").trim().toLowerCase();
   if (!u) {
-    if (pw && timingSafeEqual(sha(given), sha(pw))) return { role: "owner", name: "Owner", scopes: ["*"] };
+    if (pw && same(await sha(given), await sha(pw))) return { role: "owner", name: "Owner", scopes: ["*"] };
     return null;
   }
   const x = (await load("users")).find((v) => v.username === u);
   const salt = x?.salt || "00";
-  const h = hashPw(given, salt);
-  if (x && timingSafeEqual(h, Buffer.from(x.hash, "hex"))) return { role: "user", id: x.id, name: x.name, scopes: x.scopes || [] };
+  const h = await hashPw(given, salt);
+  if (x && x.hash && same(h, unhex(x.hash))) return { role: "user", id: x.id, name: x.name, scopes: x.scopes || [] };
   return null;
 }
 
@@ -239,7 +262,7 @@ async function handle(req) {
       Object.assign(x, { name, username, scopes });
       if (u.password) {
         if (String(u.password).length < 6) return fail("password");
-        x.salt = randomBytes(16).toString("hex"); x.hash = hashPw(u.password, x.salt).toString("hex");
+        x.salt = randomHex(16); x.hash = hex(await hashPw(u.password, x.salt));
       }
       logs.push({ coll: "users", op: isNew ? "add" : "update", id: x.id, label: `${name} (${scopes.join(", ") || "no access"})` });
     } else if (op === "userDel") {
