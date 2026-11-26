@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TJO Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bg:#f5f3ec;--card:#fff;--ink:#1c2230;--mut:#69708a;--line:#e1ddd0;--acc:#2f6fdb;--ok:#2e9e5b;--semi:#d99a1c;--bad:#d1453b;--none:#8a90a3;--soft:#efece2;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0d1120;--card:#171c2e;--ink:#e8ebf5;--mut:#9aa2bd;--line:#273049;--acc:#6aa0ff;--ok:#43c47a;--semi:#efb53a;--bad:#f0675c;--none:#7d84a0;--soft:#1f2640}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0d1120;--card:#171c2e;--ink:#e8ebf5;--mut:#9aa2bd;--line:#273049;--acc:#6aa0ff;--ok:#43c47a;--semi:#efb53a;--bad:#f0675c;--none:#7d84a0;--soft:#1f2640}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+h1,h2{font-family:"Cinzel",Georgia,serif;margin:0;letter-spacing:.02em}
+h1{font-size:clamp(22px,4vw,30px)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.sub{color:var(--mut);margin:4px 0 0}
+.mode{cursor:pointer;color:var(--ink);font:inherit;font-size:12px;font-weight:600;padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--card);white-space:nowrap}
+.mode.edit{border-color:var(--acc);color:var(--acc)}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:18px 0 14px;padding-bottom:4px}
+.tab{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer;font:inherit;white-space:nowrap}
+.tab.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.tab small{opacity:.7;margin-left:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.step{cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.step:hover{border-color:var(--acc)}
+.step .n{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.step h2{font-size:16px;margin:4px 0 6px}
+.bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--soft);margin:10px 0 8px}
+.bar i{display:block}
+.chips{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:99px;background:var(--soft)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.c-active{background:var(--ok)}.c-semi{background:var(--semi)}.c-inactive{background:var(--bad)}.c-unreviewed{background:var(--none)}.c-purge{background:var(--bad)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+input,select,button{font:inherit}
+input[type=text],input[type=date],select{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 9px;max-width:100%}
+input[type=text]{min-width:0}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn.ghost{background:transparent;color:var(--mut);border:1px solid var(--line);padding:5px 9px;font-weight:500}
+.btn.ghost.arm{color:var(--bad);border-color:var(--bad)}
+.fl{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:4px 11px;cursor:pointer;font-size:13px}
+.fl.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:1320px}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);text-align:left;padding:10px;border-bottom:1px solid var(--line);background:var(--soft)}
+td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tr.hidden{display:none}
+td input[type=text],td input[type=date],td select{width:100%}
+select[data-v=active]{border-color:var(--ok);color:var(--ok)}
+select[data-v=semi]{border-color:var(--semi);color:var(--semi)}
+select[data-v=inactive],select[data-v=purge]{border-color:var(--bad);color:var(--bad)}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:600;background:var(--soft);color:var(--mut)}
+.badge.active{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.badge.semi{background:color-mix(in srgb,var(--semi) 20%,transparent);color:var(--semi)}
+.badge.inactive,.badge.purge{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.empty,.note{color:var(--mut);padding:18px;text-align:center}
+.note{text-align:left;padding:0}
+ol{margin:8px 0 0;padding-left:20px;color:var(--mut)}
+textarea{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 9px;width:100%;resize:vertical;font:inherit}
+.task{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;margin-bottom:10px}
+.task.done{opacity:.65}
+.trow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.trow>select,.trow>input[type=date]{width:auto}
+.late{color:var(--bad);font-weight:600}
+.task p{margin:0;color:var(--mut);white-space:pre-wrap}
+.gh{font-family:"Cinzel",Georgia,serif;font-size:15px;margin:20px 0 8px;display:block;cursor:default}
+details>summary.gh{cursor:pointer}
+.gh small{color:var(--mut);font-family:system-ui,sans-serif;font-weight:400}
+#toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:10px;font-size:14px;display:none;z-index:5}
+.pl h3{font-family:"Cinzel",Georgia,serif;font-size:16px;margin:0 0 6px}
+.pl p{margin:6px 0;color:var(--mut)}.pl p b{color:var(--ink)}
+.pl ol,.pl ul{margin:6px 0;padding-left:20px;color:var(--mut)}.pl li{margin:2px 0}
+.pl details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 16px;margin-bottom:10px}
+.pl details>summary{cursor:pointer;font-family:"Cinzel",Georgia,serif;font-size:17px;font-weight:700;padding:10px 0}
+.pl details[open]>summary{border-bottom:1px solid var(--line);margin-bottom:10px}
+.pl .tag{display:inline-block;padding:1px 9px;border-radius:99px;background:var(--soft);color:var(--mut);font:600 12px system-ui,sans-serif;margin-left:6px}
+.pl .flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0}.pl .flow span.s{padding:5px 11px;border-radius:99px;background:var(--acc);color:#fff;font-weight:600;font-size:13px}.pl .flow span.a{color:var(--mut)}
+.pl .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}.pl .tbl table{min-width:640px}
+.pl .tbl td,.pl .tbl th{vertical-align:top}
+</style>
+</head>
+<body>
+<div class="wrap"><div id="app"></div></div>
+<div id="toast"></div>
+<script>
+const COUNCILS=['Jedi Task Force','Jedi Peacekeepers','Librarians Assembly'];
+const DIVS=['Jedi Assault Team','Temple Guard','Jedi Shadows'];
+const OLDDIV={'Jedi Task Force':'Jedi Assault Team','Jedi Librarians':'Jedi Shadows','Librarians':'Jedi Shadows'};
+const nd=x=>OLDDIV[x]||x;
+const OLDC={'Council of Reconciliation':'Jedi Task Force','Council of Reassignment':'Jedi Peacekeepers','Council of First Knowledge':'Librarians Assembly',"Librarian's Assembly":'Librarians Assembly','Librarian’s Assembly':'Librarians Assembly'};
+const nc=x=>OLDC[x]||x;
+const ERR={taken:'That username is already taken.',password:'Passwords need at least 6 characters.',user:'Enter a name and a username (3–24 letters, numbers, dots, dashes or underscores).',limit:'Limit reached.',name:'Add a name first.',title:'Add a title first.',old:'Enter the old rank first.',missing:'That item no longer exists.'};
+const CMAP={cor:COUNCILS[0],cora:COUNCILS[1],cofk:COUNCILS[2]};
+const PLAN=[
+{s:'Step 1',t:'High Ranks',d:'Who plans to be active and host events, and who has no interest (to be purged).',tab:'hr',f:''},
+{s:'Step 2',t:COUNCILS[0],d:'Review every Jedi Assault Team member.',tab:'councils',f:COUNCILS[0]},
+{s:'Step 3',t:COUNCILS[1],d:'Review every Jedi Peacekeeper member.',tab:'councils',f:COUNCILS[1]},
+{s:'Step 4',t:COUNCILS[2],d:'Review every Librarians Assembly member.',tab:'councils',f:COUNCILS[2]},
+{s:'Step 5',t:'Divisions',d:'Jedi Assault Team, Temple Guard and Jedi Shadows.',tab:'divisions',f:''}];
+const TABINFO={
+hr:{t:'High Ranks',d:'Who plans to be active and host events, and who has no interest (to be purged). Set a council or division here and they also appear on that tab.',sec:'hr',label:'High Rank'},
+councils:{t:'Councils',d:'Members of the three councils. High Ranks with a council in their profile appear here automatically.',sec:'council',field:'council',opts:COUNCILS,label:'Council'},
+divisions:{t:'Divisions',d:'Members of the three divisions. High Ranks with a division in their profile appear here automatically.',sec:'division',field:'division',opts:DIVS,label:'Division'}};
+const ST=[['unreviewed','Not reviewed'],['active','Active'],['semi','Semi-active'],['inactive','Inactive']];
+const DEC=[['undecided','Undecided'],['retain','Retain'],['purge','Purge']];
+const HOST=[['','—'],['yes','Yes'],['maybe','Maybe'],['no','No']];
+const TST=[['todo','To do'],['doing','In progress'],['hold','On hold'],['done','Completed']];
+const CATS=[['general','General TJO'],['council','Council tasks'],['division','Division tasks']];
+const tcat=t=>t.category||'general';
+function targetOpts(c){return c==='council'?[['','All councils'],...COUNCILS.map(x=>[x,x])]:c==='division'?[['','All divisions'],...DIVS.map(x=>[x,x])]:null}
+const PRI=[['low','Low'],['normal','Normal'],['high','High']];
+const $=s=>document.querySelector(s);
+function h(t,p,...c){const e=document.createElement(t);for(const k in p||{}){const v=p[k];if(k==='class')e.className=v;else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(k==='value')e.value=v;else e.setAttribute(k,v)}for(const x of c.flat())if(x!=null)e.append(x);return e}
+let owner=false,me=null,usr='',seats={},rules=[],decisions=[],events=[],users=[],hist=[],rf='*',evf='*',pw='',rows=[],tasks=[],tab='overview',cfilter='',dfilter='',search='',loading=true,err='',dirty=false,busy=0,last='',tfA='*',tfC='*',tfT='*',doneOpen=false;
+function norm(r){
+ const o={...r},g=o.group||'',fd=nd;
+ if(CMAP[o.section]){if(o.council===undefined)o.council=CMAP[o.section];o.section='council'}
+ else if(o.section==='div')o.section='division';
+ if(o.council===undefined)o.council=COUNCILS.includes(g)?g:'';
+ if(o.division===undefined)o.division=DIVS.includes(fd(g))?fd(g):'';
+ else o.division=nd(o.division);
+ if(o.council)o.council=nc(o.council);
+ return o;
+}
+function members(t,f){return rows.filter(r=>t==='hr'?r.section==='hr':t==='councils'?(f?r.council===f:(r.section==='council'||!!r.council)):(f?r.division===f:(r.section==='division'||!!r.division)))}
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',3500)}
+async function api(body,pass,user){
+ const r=await fetch('/api/people',{method:'POST',headers:{'content-type':'application/json','x-admin-password':pass??pw,'x-user':user??usr},body:JSON.stringify(body)});
+ if(r.status===401){const e=new Error('auth');e.auth=true;throw e}
+ if(r.status===403){const e=new Error('perm');e.perm=true;throw e}
+ if(!r.ok){let m='';try{m=(await r.json()).error}catch{}const e=new Error(m||'http '+r.status);e.code=m;throw e}
+ return r.json();
+}
+function apply(d){
+ if(d.me)me=d.me;
+ if(d.users)users=d.users;
+ const s=JSON.stringify([d.people,d.tasks,d.seats,d.rules,d.decisions,d.events]);
+ const chg=s!==last;
+ if(chg){last=s;rows=(d.people||[]).map(norm);tasks=(d.tasks||[]).map(t=>({...t,target:t.category==='division'?nd(t.target||''):t.category==='council'?nc(t.target||''):(t.target||'')}));seats=d.seats||{};rules=d.rules||[];decisions=d.decisions||[];events=d.events||[]}
+ if(chg||d.users)schedule();
+}
+async function write(body){
+ busy++;
+ try{const d=await api(body);apply(d);if(tab==='history')loadHist()}
+ catch(e){if(e.auth){doLogout();toast('Session expired. Log in again.');render()}else if(e.perm){toast('Your account can’t make that change.');pull()}else{toast(ERR[e.code]||'Could not save. Check your connection and try again.');if(e.code==='missing')pull()}}
+ finally{busy--}
+}
+function save(id,patch){const r=rows.find(x=>x.id===id);if(r)Object.assign(r,patch);write({op:'update',id,patch})}
+function saveTask(id,patch){const t=tasks.find(x=>x.id===id);if(t)Object.assign(t,patch);write({op:'updateTask',id,patch})}
+function doLogout(){owner=false;me=null;pw='';usr='';users=[];hist=[];try{sessionStorage.removeItem('tjo-auth')}catch{}if(tab==='history'||tab==='users')tab='overview'}
+async function login(){
+ const u0=prompt('Username (leave blank for the owner)');if(u0===null)return;
+ const u=u0.trim().toLowerCase(),p=prompt(u?'Password for '+u:'Owner password');if(!p)return;
+ try{const d=await api({op:'check'},p,u);pw=p;usr=u;owner=true;try{sessionStorage.setItem('tjo-auth',JSON.stringify([u,p]))}catch{}apply(d);render()}
+ catch(e){toast(e.auth?'Wrong username or password.':'Could not reach the server.')}
+}
+function logout(){doLogout();render()}
+function counts(l){const c={unreviewed:0,active:0,semi:0,inactive:0,purge:0};l.forEach(r=>{c[r.status||'unreviewed']++;if(r.decision==='purge')c.purge++});return c}
+function typing(){const a=document.activeElement;return a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA')}
+function schedule(){if(typing())dirty=true;else render()}
+document.addEventListener('focusout',()=>setTimeout(()=>{if(dirty&&!typing()){dirty=false;render()}},0));
+function sel(opts,val,fn,v){const s=h('select',{onchange:e=>{e.target.dataset.v=e.target.value;fn(e.target.value)}},opts.map(o=>h('option',{value:o[0]},o[1])));s.value=val;if(v)s.dataset.v=val;return s}
+function chipsFor(c){return h('div',{class:'chips'},ST.map(([k,l])=>h('span',{class:'chip'},h('i',{class:'dot c-'+k}),c[k]+' '+l.toLowerCase())),c.purge?h('span',{class:'chip'},h('i',{class:'dot c-purge'}),c.purge+' to purge'):null)}
+function barFor(c,t){return h('div',{class:'bar'},['active','semi','inactive','unreviewed'].map(k=>h('i',{class:'c-'+k,style:'width:'+(t?c[k]/t*100:0)+'%'})))}
+function go(t,f){tab=t;if(t==='history')loadHist();if(t==='users')loadUsers();if(t==='councils')cfilter=f||'';if(t==='divisions')dfilter=f||'';search='';render();scrollTo(0,0)}
+function armBtn(label,fn){return h('button',{class:'btn ghost',onclick:e=>{const b=e.target;if(b.classList.contains('arm'))fn();else{b.classList.add('arm');b.textContent='Sure?';setTimeout(()=>{b.classList.remove('arm');b.textContent=label},3000)}}},label)}
+
+function header(){
+ return h('div',{class:'top'},
+  h('div',null,h('h1',null,'The Jedi Order: Tracker'),h('p',{class:'sub'},'Personnel review for TJO. Updates appear for everyone within seconds.')),
+  owner?h('button',{class:'mode edit',onclick:logout,title:'Click to log out'},(me?me.name:'Edit')+' · log out'):h('button',{class:'mode',onclick:login},'View only · Log in'));
+}
+function tabs(){
+ const mk=(id,l,n)=>h('button',{class:'tab'+(tab===id?' on':''),onclick:()=>go(id)},l,n!=null?h('small',null,String(n)):null);
+ return h('div',{class:'tabs'},mk('overview','Overview'),mk('hr','High Ranks',members('hr').length),mk('councils','Councils',members('councils').length),mk('divisions','Divisions',members('divisions').length),mk('roadmap','Roadmap',tasks.filter(t=>t.status!=='done').length),mk('ranks','Rank map'),mk('seats','Seats'),mk('events','Events'),mk('planner','Planner'),owner?mk('history','History'):null,me&&me.role==='owner'?mk('users','Users'):null);
+}
+function overview(){
+ const all=counts(rows);
+ const cards=PLAN.map(p=>{const l=members(p.tab,p.f),c=counts(l),rev=l.length-c.unreviewed;
+  return h('button',{class:'card step',onclick:()=>go(p.tab,p.f)},
+   h('div',{class:'n'},p.s),h('h2',null,p.t),h('div',{class:'sub'},p.d),barFor(c,l.length),
+   h('div',{class:'sub'},l.length?rev+' of '+l.length+' reviewed':'No personnel added yet'),chipsFor(c))});
+ const open=tasks.filter(t=>t.status!=='done').length;
+ cards.push(...extraCards());cards.push(h('button',{class:'card step',onclick:()=>go('roadmap')},h('div',{class:'n'},'Roadmap'),h('h2',null,'TJO roadmap'),h('div',{class:'sub'},'Tasks assigned to each High Rank.'),h('div',{class:'sub',style:'margin-top:8px'},tasks.length?open+' open · '+(tasks.length-open)+' done':'No tasks yet')));
+ return h('div',null,
+  h('div',{class:'card'},h('h2',{style:'font-size:18px'},'Plans'),
+   h('ol',null,PLAN.map(p=>h('li',null,h('b',{style:'color:var(--ink)'},p.t+': '),p.d))),
+   barFor(all,rows.length),h('div',{class:'sub'},rows.length+' people tracked in total'),chipsFor(all)),
+  h('div',{style:'height:12px'}),h('div',{class:'grid'},cards),
+  h('p',{class:'sub',style:'margin-top:14px'},owner?'Open a tab to add people and set their status. Everything you change saves for all viewers.':'You can view everything here, but only the tracker owner can make changes.'));
+}
+function section(id){
+ const I=TABINFO[id],f=id==='councils'?cfilter:id==='divisions'?dfilter:'';
+ const all=members(id,''),list=members(id,f).sort((a,b)=>(a.created||0)-(b.created||0));
+ const out=h('div',null,h('h2',{style:'font-size:20px'},I.t),h('p',{class:'sub'},I.d));
+ const c=counts(list);out.append(barFor(c,list.length),chipsFor(c));
+ const tools=h('div',{class:'tools'});
+ if(I.opts){const setF=v=>{if(id==='councils')cfilter=v;else dfilter=v;render()};
+  tools.append(h('button',{class:'fl'+(!f?' on':''),onclick:()=>setF('')},'All ('+all.length+')'),...I.opts.map(o=>h('button',{class:'fl'+(f===o?' on':''),onclick:()=>setF(o)},o+' ('+members(id,o).length+')')))}
+ const si=h('input',{type:'text',placeholder:'Search name, rank, notes…',value:search,oninput:e=>{search=e.target.value.toLowerCase();document.querySelectorAll('tr[data-q]').forEach(tr=>tr.classList.toggle('hidden',!tr.dataset.q.includes(search)))}});
+ tools.append(si);
+ if(owner){const ni=h('input',{type:'text',placeholder:'New person name'});
+  const add=()=>{const n=ni.value.trim();if(!n)return;ni.value='';const person={name:n,section:I.sec};if(I.field)person[I.field]=f;write({op:'add',person})};
+  ni.addEventListener('keydown',e=>{if(e.key==='Enter')add()});tools.append(ni,h('button',{class:'btn',onclick:add},'Add person'))}
+ out.append(tools);
+ const copts=[['','None'],...COUNCILS.map(x=>[x,x])],dopts=[['','None'],...DIVS.map(x=>[x,x])];
+ const head=h('tr',null,['#','Name',id!=='hr'?'Listed as':null,'Roblox username','Current rank','Council','Division','Status','Last active','Hosts events','Decision','Notes',''].filter(Boolean).map(x=>h('th',null,x)));
+ const body=list.map((r,i)=>{
+  const tr=h('tr',{'data-q':[r.name,r.roblox,r.rank,r.notes,r.council,r.division].join(' ').toLowerCase()});
+  tr.classList.toggle('hidden',!!search&&!tr.dataset.q.includes(search));
+  const T=(k,ph,ty)=>owner?h('input',{type:ty||'text',value:r[k]||'',placeholder:ph,onchange:e=>save(r.id,{[k]:e.target.value.trim()})}):(r[k]||'—');
+  const label=(opts,v)=>(opts.find(o=>o[0]===v)||opts[0])[1];
+  const S=(opts,k,def,badge)=>owner?sel(opts,r[k]||def,v=>save(r.id,{[k]:v}),badge):h('span',{class:'badge '+(badge?(r[k]||def):'')},label(opts,r[k]||def));
+  const own=id==='hr'||r.section===I.sec;
+  const del=owner?(own?armBtn('Remove',()=>{rows=rows.filter(x=>x.id!==r.id);render();write({op:'delete',id:r.id})}):armBtn('Unlist',()=>{save(r.id,{[I.field]:''});render()})):'';
+  const cells=[h('td',{style:'color:var(--mut)'},String(i+1)),h('td',null,T('name','Name'))];
+  if(id!=='hr')cells.push(h('td',null,h('span',{class:'badge'},TABINFO[r.section==='council'?'councils':r.section==='division'?'divisions':'hr'].label)));
+  cells.push(h('td',null,T('roblox','Username')),h('td',null,T('rank','Type rank')),h('td',null,S(copts,'council','',false)),h('td',null,S(dopts,'division','',false)),
+   h('td',null,S(ST,'status','unreviewed',true)),h('td',null,T('lastActive','','date')),h('td',null,S(HOST,'hosts','',false)),h('td',null,S(DEC,'decision','undecided',true)),h('td',null,T('notes','Notes')),h('td',null,del));
+  tr.append(...cells);return tr});
+ out.append(list.length?h('div',{class:'scroll'},h('table',null,h('thead',null,head),h('tbody',null,body))):h('div',{class:'card empty'},owner?'No one here yet. Add the first person above.':'Nobody has been added to this list yet.'));
+ if(id!=='hr')out.append(h('p',{class:'sub',style:'margin-top:10px'},'People marked "High Rank" are managed on the High Ranks tab. Their status is the same record everywhere. "Unlist" only removes them from this '+I.label.toLowerCase()+'.'));
+ return out;
+}
+function roadmap(){
+ const hrs=[['','Unassigned'],['all','All High Ranks'],...rows.filter(r=>r.section==='hr').map(r=>[r.id,r.name||'(unnamed)'])];
+ const nm=v=>(hrs.find(o=>o[0]===v)||hrs[0])[1];
+ const today=new Date().toISOString().slice(0,10);
+ const byA=t=>tfA==='*'||(t.assignee||'')===tfA||((t.assignee||'')==='all'&&tfA!==''&&tfA!=='all');
+ const list=tasks.filter(t=>byA(t)&&(tfC==='*'||tcat(t)===tfC)&&(tfT==='*'||(t.target||'')===tfT||!(t.target||'')))
+  .sort((a,b)=>((a.due||'9999')>(b.due||'9999')?1:(a.due||'9999')<(b.due||'9999')?-1:0)||(a.created||0)-(b.created||0));
+ const open=tasks.filter(t=>t.status!=='done').length;
+ const out=h('div',null,h('h2',{style:'font-size:20px'},'TJO Roadmap'),
+  h('p',{class:'sub'},owner?'Add tasks, choose a section, and assign them to a High Rank. Anyone with the link can see progress.':'Tasks and who is responsible for each.'),
+  h('div',{class:'sub'},tasks.length+' tasks · '+open+' open · '+(tasks.length-open)+' completed'));
+ out.append(h('div',{class:'tools'},[['*','All tasks',tasks.length],...CATS.map(([k,l])=>[k,l,tasks.filter(t=>tcat(t)===k).length])].map(([k,l,n])=>h('button',{class:'fl'+(tfC===k?' on':''),onclick:()=>{tfC=k;tfT='*';render()}},l+' ('+n+')'))));
+ const to=targetOpts(tfC);
+ const tools=h('div',{class:'tools'});
+ if(to)tools.append(...[['*',tfC==='council'?'Any council':'Any division'],...to.slice(1)].map(([k,l])=>h('button',{class:'fl'+(tfT===k?' on':''),onclick:()=>{tfT=k;render()}},l)));
+ tools.append(sel([['*','Everyone'],...hrs],tfA,v=>{tfA=v;render()}));
+ out.append(tools);
+ if(owner){
+  const ti=h('input',{type:'text',placeholder:'New task title',style:'flex:1 1 220px'});
+  let cv=tfC!=='*'?tfC:'general';const tslot=h('span',null);let nt=null;
+  const setT=()=>{const o=targetOpts(cv);tslot.replaceChildren();nt=null;if(o){nt=sel(o,tfT!=='*'&&tfC===cv?tfT:'',()=>{},false);tslot.append(nt)}};
+  const nc=sel(CATS,cv,v=>{cv=v;setT()},false);setT();
+  const na=sel(hrs,tfA!=='*'?tfA:'',()=>{},false),nd=h('input',{type:'date'}),np=sel(PRI,'normal',()=>{},false);
+  const nde=h('textarea',{rows:'3',placeholder:'Description: what needs to be done, links, expectations…'});
+  const add=()=>{const t=ti.value.trim();if(!t)return;write({op:'addTask',task:{title:t,details:nde.value,assignee:na.value,category:cv,target:nt?nt.value:'',due:nd.value,priority:np.value}});ti.value='';nde.value=''};
+  ti.addEventListener('keydown',e=>{if(e.key==='Enter')add()});
+  out.append(h('div',{class:'card',style:'margin:12px 0;display:grid;gap:8px'},h('div',{class:'trow'},ti,nc,tslot,na,nd,np),nde,h('div',null,h('button',{class:'btn',onclick:add},'Add task'))));
+ }
+ const card=t=>{
+  const late=t.due&&t.due<today&&t.status!=='done',c=tcat(t),el=h('div',{class:'task'+(t.status==='done'?' done':'')});
+  if(owner){
+   const o=targetOpts(c);
+   el.append(h('div',{class:'trow'},h('input',{type:'text',value:t.title||'',placeholder:'Task',style:'flex:1 1 220px;font-weight:600',onchange:e=>saveTask(t.id,{title:e.target.value.trim()})}),armBtn('Remove',()=>{tasks=tasks.filter(x=>x.id!==t.id);render();write({op:'deleteTask',id:t.id})})),
+    h('div',{class:'trow'},sel(CATS,c,v=>{saveTask(t.id,{category:v,target:''});render()},false),o?sel(o,t.target||'',v=>saveTask(t.id,{target:v}),false):null,
+     sel(hrs,t.assignee||'',v=>saveTask(t.id,{assignee:v}),false),sel(TST,t.status||'todo',v=>{saveTask(t.id,{status:v});render()},false),sel(PRI,t.priority||'normal',v=>saveTask(t.id,{priority:v}),false),
+     h('input',{type:'date',value:t.due||'',onchange:e=>saveTask(t.id,{due:e.target.value})})),
+    h('textarea',{rows:'3',placeholder:'Description',value:t.details||'',onchange:e=>saveTask(t.id,{details:e.target.value.trim()})}));
+  }else{
+   el.append(h('div',{class:'trow'},h('b',{style:'flex:1 1 220px'},t.title),h('span',{class:'badge'},CATS.find(x=>x[0]===c)[1]+(t.target?': '+t.target:'')),h('span',{class:'badge'},nm(t.assignee||'')),
+     t.priority==='high'?h('span',{class:'badge purge'},'High priority'):null,
+     t.due?h('span',{class:late?'late':'sub'},(late?'Overdue · ':'Due ')+t.due):null),
+    t.details?h('p',null,t.details):null);
+  }
+  return el};
+ if(!list.length)out.append(h('div',{class:'card empty'},tasks.length?'No tasks match this filter.':(owner?'No tasks yet. Add the first one above.':'No tasks have been added yet.')));
+ [['doing','In progress'],['todo','To do'],['hold','On hold'],['done','Completed']].forEach(([k,l])=>{
+  const g=list.filter(t=>(t.status||'todo')===k);if(!g.length)return;
+  if(k==='done')out.append(h('details',{...(doneOpen?{open:''}:{}),ontoggle:e=>{doneOpen=e.target.open}},h('summary',{class:'gh'},l+' ',h('small',null,'('+g.length+')')),g.map(card)));
+  else out.append(h('h3',{class:'gh'},l+' ',h('small',null,'('+g.length+')')),...g.map(card));
+ });
+ return out;
+}
+
+const PL={
+intro:['The Jedi Order lacks a concrete system for induction and progression. As the Fallen Empire game and community keep advancing, the faction needs a system to match the Sith Order’s game mechanics and keep the factions balanced.','This arrangement proposal sets out how progression and administration work across the Jedi Order. Once approved, each branch will be formatted into an in-game system. Names and definitions were drafted by a High Council member as a starting point, and the final authority lies with the Order’s leadership.'],
+branches:[
+{n:'Jedi Task Force',d:'The major combative branch. Members practise and perfect lightsaber combat and pass on what they learn. Houses all internal and external combat operations, plus external relations with other factions when scheduling combat events.',div:'Jedi Assault Team (renamed)',com:[['Jedi Battlemasters','Instructional','Learn and then teach lightsaber combat, hosting lightsaber instruction events inside the branch and for the whole Order.'],['Strategic Unit','Administrative','Drives large-scale warfare. Learns and teaches raid and defence strategy, and progresses by planning, executing and leading raid operations.'],['Diplomatic Corps','Administrative','Handles external relations for combat operations. Keeps contact with allies and rivals and plans frequent large-scale combat events with the Strategic Unit.']],ranks:['Task Force Aspirant','Task Force Operative','Task Force Hunter','Task Force Preceptor','Task Force Officer','Task Force Captain','Council of Reconciliation','Task Force Commander']},
+{n:'Jedi Peacekeepers',d:'Likely the largest branch. The generalised hub for Order operations, with an emphasis on administrative and civic duties. Houses all recruitment and judicial operations, with room to grow as the community does.',div:'Temple Guard',com:[['Exploration Corps','Instructional','The most general committee in any branch. Success comes from activity (patrols, rallies, discipline training) leading into a hosting role. High ranks get a lot of say over hosting scale and variety for the Order.'],['Acquisition Division','Administrative','Recruitment. Builds propaganda initiatives, helps new members settle in, and succeeds by coordinating large-scale recruitment systems.'],['Investigator Core','Administrative','Hub of judicial operations. Starts with reviewing tickets and reports and can progress to ruling on disputes. Highest barrier to entry of any committee.']],ranks:['Peacekeeper Envoy','Peacekeeper Mediator','Peacekeeper Negotiator','Peacekeeper Emissary','Peacekeeper Magistrate','Peacekeeper Consul','Council of Reassignment','TBD']},
+{n:'Librarian’s Assembly',d:'The lore and instructional branch. Produces and preserves lore content, gives new members general instruction, and expects strong familiarity and combat proficiency with applications of the Force.',div:'Jedi Shadows',com:[['Convocation of Instructors','Instructional','Learn lore and Force applications, then host those events inside and outside the branch. Focuses on orientation and introductory events for new members.'],['Keepers of the Vault','Administrative','Maintain the Jedi Holocron vault and archives, publish articles to the in-game archives and oversee integration of lore. Progress by showing lore knowledge and writing ability.'],['Prophetic Council','Administrative','No description in the proposal yet.']],ranks:['Librarian Student','Librarian Scholar','Librarian Archivist','Librarian Philosopher','Librarian Historian','Librarian Seer','Council of First Knowledge','Chief Librarian']}],
+teams:[['Instructional teams','The largest committee in each branch and the place to progress without a specialist skill set. Attendance and hosting ability drive progression from non-hosting to hosting. The slowest route, meant for people who love hosting or do not want to progress fully. No prerequisites. Progression is formal: hosting evaluations, votes and other regulating steps.'],['Administrative teams','Specialised sub-units that do one specific job for the Order (judicial work, warfare planning, lore articles). Higher barrier to entry and a required skill set. Progression is fast-tracked and mostly by hand selection from higher ranks, because the teams are small and the work shows who is performing.']],
+flow:['Choose a Faction','Choose a Pathway','Choose a Branch','Choose a Committee','Final Progression'],
+ladder:['Low Rank (introductory)','Low Rank','Middle Rank','Middle Rank','High Rank','High Rank','High Rank (Jedi Master / Elder)','Command Rank (Jedi Council)','Command Rank (Jedi High Council)'],
+seats:['Instructional Team Overseer','Instructional Team Overseer','Administrative Team 1 Overseer','Administrative Team 2 Overseer','Division Command Seat'],
+why:'The Sith Order’s pending SOMC proposal lets high ranks hand-pick people for the next rank once automated division and merit points are met. The author expects that to get out of hand as factions grow. Splitting progression into smaller committee ladders, each with its own shifting criteria based on its duties and needs, simplifies progression, builds the group aspect and meets administrative needs.',
+rankNotes:['Low and middle ranks mainly attend events and learn branch and hosting operations (instructional) or do routine administrative tasks (administrative).','Significant Order-wide duties start at high ranks, where specialisation matters. High ranks run Order-wide events and manage progression in their branch and committee.','The most senior rank outside High Council is the branch council rank: Jedi Masters and/or Elders who help branch command. Seat count depends on committee size.'],
+div:['Divisions sit “under” a branch but are tied to it only through ranking and membership.','Joining a division automatically makes you a member of its branch, and division progression can earn ranks in that branch. You do not have to join the branch first.','At least one branch council seat is reserved for division command, and other high positions may match division ranks.','No division or branch is locked to an in-game pathway (guardian, sentinel, consular). The exception is Temple Guard, which needs tools and abilities from the sentinel pathway.'],
+entry:['Branch entry is deliberately easy. Selectivity comes from divisions and committees.','Peacekeepers and Librarian’s Assembly use application systems. Jedi Task Force holds general combat evaluations.','Selection criterion: “an individual displaying promising potential to grow and excel in the field of this branch.”','Committees set activity expectations. Instructional committees cannot set them until a member reaches hosting level. Instructional members can reach the top non-hosting rank and stay without hosting expectations, but expectations apply if they move into command.','Command members of the other committees can release branch members at their discretion.'],
+open:['Peacekeepers command rank is still “TBD”.','Prophetic Council (Librarian’s Assembly) has no description.','The proposal says seven ranks per branch, but lists eight per branch (nine in the general ladder).','Branch and division names are proposals. The tracker now uses the proposal’s three divisions. The old Jedi Task Force division became Jedi Assault Team, and the old Jedi Librarians division was merged into Jedi Shadows.']};
+function planner(){
+ const ul=a=>h('ul',null,a.map(x=>h('li',null,x)));
+ const D=(t,open,...c)=>h('details',open?{open:''}:{},h('summary',null,t),...c);
+ const out=h('div',{class:'pl'},h('h2',{style:'font-size:20px'},'Planner'),h('p',null,'Proposal for the Arrangement of the Jedi Order, kept here for reference.'));
+ out.append(decisionsLog());out.append(D('Introduction',true,...PL.intro.map(x=>h('p',null,x))));
+ out.append(D('Branches, committees and divisions',true,h('p',null,'Three branches, each overseen by a Jedi High Council member, each with three committees (one instructional, two administrative) and one division.'),
+  ...PL.branches.map(b=>h('div',{class:'card',style:'margin:10px 0'},h('h3',null,b.n),h('p',null,b.d),h('p',null,h('b',null,'Division: '),b.div),
+   h('div',{class:'tbl',style:'margin-top:8px'},h('table',null,h('thead',null,h('tr',null,['Committee','Type','Role'].map(x=>h('th',null,x)))),h('tbody',null,b.com.map(c=>h('tr',null,h('td',null,h('b',null,c[0])),h('td',null,h('span',{class:'badge'},c[1])),h('td',null,c[2]))))))))));
+ out.append(D('Committee types',false,...PL.teams.map(t=>h('div',null,h('h3',null,t[0]),h('p',null,t[1])))));
+ out.append(D('Progression',false,h('p',null,'Each choice lets a player shape their role in the Order and the wider Fallen Empire community:'),
+  h('div',{class:'flow'},PL.flow.flatMap((x,i)=>[i?h('span',{class:'a'},'→'):null,h('span',{class:'s'},x)])),
+  h('h3',{style:'margin-top:14px'},'Branch ladder'),h('ol',null,PL.ladder.map(x=>h('li',null,x))),
+  h('h3',{style:'margin-top:14px'},'Why committees'),h('p',null,PL.why)));
+ out.append(D('Rank structures',false,ul(PL.rankNotes),
+  h('div',{class:'grid',style:'margin:10px 0'},PL.branches.map(b=>h('div',{class:'card'},h('h3',null,b.n),h('ol',null,b.ranks.map(r=>h('li',null,r)))))),
+  h('h3',null,'Initial branch council seats'),ul(PL.seats)));
+ out.append(D('Divisional ties to branches',false,ul(PL.div)));
+ out.append(D('Branch membership and expectations',false,ul(PL.entry)));
+ out.append(D('Open items in the proposal',true,ul(PL.open)));
+ return out;
+}
+
+const BK=['tf','pk','la'],BRN={tf:COUNCILS[0],pk:COUNCILS[1],la:COUNCILS[2]};
+const BOPT=[['','Whole Order'],...BK.map(k=>[k,BRN[k]])];
+const COMBR={},RBR={};PL.branches.forEach((b,i)=>{b.com.forEach(c=>COMBR[c[0]]=BK[i]);b.ranks.forEach(r=>RBR[r]=BK[i])});
+const ALLCOMM=PL.branches.flatMap(b=>b.com.map(c=>c[0])),ALLRANKS=PL.branches.flatMap(b=>b.ranks).filter(r=>r!=='TBD');
+const RANKOPT=[['','Choose new rank'],...ALLRANKS.map(r=>[r,r])];
+const mine=b=>!!me&&(me.role==='owner'||me.scopes.includes('hr')||(b&&me.scopes.includes(b)));
+const pname=id=>(rows.find(r=>r.id===id)||{}).name||'';
+const todayS=()=>new Date().toISOString().slice(0,10);
+const tbl=(head,body,w)=>h('div',{class:'scroll'},h('table',{style:'min-width:'+(w||0)+'px'},h('thead',null,h('tr',null,head.map(x=>h('th',null,x)))),h('tbody',null,body)));
+const H2=(t,d)=>[h('h2',{style:'font-size:20px'},t),h('p',{class:'sub'},d)];
+function extraCards(){
+ const mapped=rows.filter(r=>r.newRank).length,filled=Object.keys(seats).filter(k=>pname(seats[k])).length,t=todayS(),up=events.filter(e=>e.date>=t&&e.status==='planned').length;
+ const C=(n,t2,d,l,tb)=>h('button',{class:'card step',onclick:()=>go(tb)},h('div',{class:'n'},n),h('h2',null,t2),h('div',{class:'sub'},d),h('div',{class:'sub',style:'margin-top:8px'},l));
+ return [C('Migration','Rank map','Old ranks mapped to the new branch rank ladders.',rows.length?mapped+' of '+rows.length+' mapped':'No personnel yet','ranks'),C('Structure','Seats','Branch command, council and committee lead seats.',filled+' of '+BK.length*9+' filled','seats'),C('Schedule','Events','Events and who is hosting them.',up+' upcoming','events')]}
+function inp(ty,o,ph,val,fn,st){let e;
+ if(ty==='sel')e=sel(o,val||o[0][0],fn,false);
+ else if(ty==='area')e=h('textarea',{rows:'3',placeholder:ph||'',value:val||'',onchange:x=>fn(x.target.value.trim())});
+ else e=h('input',{type:ty,placeholder:ph||'',value:val||'',onchange:x=>fn(x.target.value.trim())});
+ if(st)e.style.cssText=st;return e}
+function put(coll,id,patch){const it=({rules,decisions,events}[coll]||[]).find(x=>x.id===id);if(it)Object.assign(it,patch);write({op:'update',coll,id,patch})}
+function adder(coll,F,def){
+ const v={...def};F.forEach(([k,ty,o])=>{if(ty==='sel'&&v[k]===undefined)v[k]=o[0][0]});
+ const els=F.map(([k,ty,o,ph,st,side])=>inp(ty,o,ph,v[k],x=>{v[k]=x;if(side)Object.assign(v,side(x))},st));
+ const add=()=>{if(!String(v[F[0][0]]||'').trim())return toast('Fill in the first field.');write({op:'add',coll,item:v})};
+ return h('div',{class:'card',style:'margin:12px 0;display:grid;gap:8px'},h('div',{class:'trow'},els.filter((_,i)=>F[i][1]!=='area')),els.filter((_,i)=>F[i][1]==='area'),h('div',null,h('button',{class:'btn',onclick:add},'Add')))}
+function ecard(coll,it,F,view){
+ if(!owner)return view(it);
+ const ed=([k,ty,o,ph,st,side])=>inp(ty,o,ph,it[k],x=>put(coll,it.id,{[k]:x,...(side?side(x):{})}),st);
+ return h('div',{class:'task'},h('div',{class:'trow'},F.filter(f=>f[1]!=='area').map(ed),armBtn('Remove',()=>write({op:'delete',coll,id:it.id}))),F.filter(f=>f[1]==='area').map(ed))}
+
+const RULEF=[['old','text',0,'Old rank, e.g. Jedi Knight','flex:1 1 200px'],['newRank','sel',RANKOPT,'','',x=>({branch:RBR[x]||''})]];
+function ranksTab(){
+ const out=h('div',null,...H2('Rank map','Map each person’s old rank to the new branch ladders from the proposal. Add rules, apply them, then fix individuals by hand.'));
+ out.append(h('h3',{class:'gh'},'Mapping rules ',h('small',null,'('+rules.length+')')));
+ if(owner)out.append(adder('rules',RULEF,{}));
+ out.append(rules.length?h('div',null,rules.map(r=>ecard('rules',r,RULEF,x=>h('div',{class:'task'},h('div',{class:'trow'},h('b',null,x.old),h('span',{class:'sub'},'→'),h('span',{class:'badge'},x.newRank||'—')))))):h('div',{class:'card empty'},'No rules yet.'));
+ if(owner&&rules.length)out.append(h('div',{class:'tools'},h('button',{class:'btn',onclick:()=>write({op:'applyRules'})},'Apply rules to people without a new rank'),h('span',{class:'sub'},'Matches the “Current rank” text, ignoring capitalisation.')));
+ const mapped=rows.filter(r=>r.newRank).length;
+ out.append(h('h3',{class:'gh'},'People ',h('small',null,'('+mapped+' of '+rows.length+' mapped)')));
+ out.append(h('div',{class:'tools'},[['*','All'],['un','Unmapped'],...BK.map(k=>[k,BRN[k]])].map(([k,l])=>h('button',{class:'fl'+(rf===k?' on':''),onclick:()=>{rf=k;render()}},l))));
+ const list=rows.filter(r=>rf==='*'||(rf==='un'?!r.newRank:r.branch===rf)).sort((a,b)=>(a.created||0)-(b.created||0));
+ const T=(r,k,o,fn)=>owner?sel(o,r[k]||'',fn,false):(o.find(x=>x[0]===(r[k]||''))||o[0])[1];
+ const body=list.map(r=>{
+  const cOpts=[['','None'],...(r.branch?PL.branches[BK.indexOf(r.branch)].com:PL.branches.flatMap(b=>b.com)).map(c=>[c[0],c[0]])];
+  const rOpts=[['','Not set'],...(r.branch?PL.branches[BK.indexOf(r.branch)].ranks:ALLRANKS).filter(x=>x!=='TBD').map(x=>[x,x])];
+  return h('tr',null,h('td',null,r.name||'(unnamed)'),h('td',null,r.rank||'—'),
+   h('td',null,T(r,'branch',[['','Not set'],...BK.map(k=>[k,BRN[k]])],v=>{save(r.id,{branch:v,...(COMBR[r.committee]!==v?{committee:''}:{})});render()})),
+   h('td',null,T(r,'committee',cOpts,v=>{save(r.id,{committee:v,...(v?{branch:COMBR[v]}:{})});render()})),
+   h('td',null,T(r,'newRank',rOpts,v=>{save(r.id,{newRank:v,...(v&&RBR[v]?{branch:RBR[v]}:{})});render()})))});
+ out.append(list.length?tbl(['Name','Current rank','Branch','Committee','New rank'],body,760):h('div',{class:'card empty'},rows.length?'Nobody matches this filter.':'Add people on the High Ranks, Councils or Divisions tabs first.'));
+ return out}
+
+function seatDefs(i){const b=PL.branches[i];return [['cmd',b.ranks[7]==='TBD'?'Branch commander (title TBD)':b.ranks[7]],...PL.seats.map((x,j)=>['cs'+(j+1),'Council · '+x]),...b.com.map((c,j)=>['ld'+j,'Lead: '+c[0]])]}
+function seatsTab(){
+ const out=h('div',null,...H2('Seats','Branch command, the five branch council seats and a lead for each committee. Assign committees to people on the Rank map tab.'));
+ const ppl=[['','Vacant'],...rows.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(r=>[r.id,r.name||'(unnamed)'])];
+ const cards=PL.branches.map((b,i)=>{
+  const k=BK[i],defs=seatDefs(i);let f=0;
+  const trs=defs.map(([id,l])=>{const key=k+':'+id,v=pname(seats[key])?seats[key]:'';if(v)f++;
+   return h('tr',null,h('td',null,l),h('td',null,owner&&mine(k)?sel(ppl,v,x=>{seats[key]=x;write({op:'seat',key,personId:x})},false):v?pname(v):h('span',{class:'badge'},'Vacant')))});
+  const ros=b.com.map(c=>{const m=rows.filter(r=>r.committee===c[0]);return h('p',{class:'sub',style:'margin:4px 0'},h('b',{style:'color:var(--ink)'},c[0]+' ('+m.length+'): '),m.length?m.map(r=>r.name||'(unnamed)').join(', '):'nobody assigned yet')});
+  return h('div',{class:'card'},h('h2',{style:'font-size:17px'},BRN[k]),h('div',{class:'sub'},b.ranks[6]+' · '+f+' of '+defs.length+' seats filled'),h('div',{style:'margin:10px 0'},tbl([],trs,0)),h('h3',{class:'gh',style:'margin:12px 0 4px'},'Committee members'),ros)});
+ out.append(h('div',{class:'grid',style:'grid-template-columns:repeat(auto-fill,minmax(320px,1fr))'},cards));
+ return out}
+
+const EVT=[['revival','Revival event'],['training','Training'],['raid','Raid / combat'],['meeting','Meeting'],['other','Other']],EST=[['planned','Planned'],['done','Done'],['cancelled','Cancelled']];
+const EF=[['title','text',0,'Event title','flex:1 1 220px'],['date','date'],['time','time'],['type','sel',EVT],['branch','sel',BOPT],['host','text',0,'Host'],['status','sel',EST],['details','area',0,'Details, location, notes…']];
+function eventsTab(){
+ const out=h('div',null,...H2('Events','Events, trainings and meetings, and who is hosting each one.'));
+ out.append(h('div',{class:'tools'},[['*','Everything'],...BOPT].map(([k,l])=>h('button',{class:'fl'+(evf===k?' on':''),onclick:()=>{evf=k;render()}},l))));
+ if(owner)out.append(adder('events',EF,{}));
+ const key=e=>(e.date||'9999')+(e.time||'');
+ const list=events.filter(e=>evf==='*'||(e.branch||'')===evf).sort((a,b)=>key(a)>key(b)?1:-1),t=todayS();
+ const up=list.filter(e=>e.status==='planned'&&(!e.date||e.date>=t)),past=list.filter(e=>!up.includes(e)).reverse();
+ const view=e=>h('div',{class:'task'+(e.status!=='planned'?' done':'')},h('div',{class:'trow'},h('b',{style:'flex:1 1 220px'},e.title),h('span',{class:'badge'},(EVT.find(x=>x[0]===e.type)||EVT[4])[1]),h('span',{class:'badge'},e.branch?BRN[e.branch]:'Whole Order'),e.date?h('span',{class:'sub'},e.date+(e.time?' · '+e.time:'')):null,e.host?h('span',{class:'sub'},'Host: '+e.host):null,e.status!=='planned'?h('span',{class:'badge'},(EST.find(x=>x[0]===e.status)||EST[0])[1]):null),e.details?h('p',null,e.details):null);
+ out.append(h('h3',{class:'gh'},'Upcoming ',h('small',null,'('+up.length+')')));
+ out.append(up.length?h('div',null,up.map(e=>ecard('events',e,EF,view))):h('div',{class:'card empty'},'No upcoming events.'));
+ if(past.length)out.append(h('details',null,h('summary',{class:'gh'},'Past, done and cancelled ',h('small',null,'('+past.length+')')),past.map(e=>ecard('events',e,EF,view))));
+ return out}
+
+const DST=[['pending','Pending'],['approved','Approved'],['rejected','Rejected'],['revisit','Revisit']];
+const DF=[['title','text',0,'Decision or question','flex:1 1 240px'],['date','date'],['status','sel',DST],['by','text',0,'Decided by'],['details','area',0,'Context, outcome, next steps…']];
+function decisionsLog(){
+ const l=decisions.slice().sort((a,b)=>(b.date||'')>(a.date||'')?1:-1);
+ const view=d=>h('div',{class:'task'},h('div',{class:'trow'},h('b',{style:'flex:1 1 240px'},d.title),h('span',{class:'badge '+(d.status==='approved'?'active':d.status==='rejected'?'purge':d.status==='revisit'?'semi':'')},(DST.find(x=>x[0]===d.status)||DST[0])[1]),d.date?h('span',{class:'sub'},d.date):null,d.by?h('span',{class:'sub'},'By '+d.by):null),d.details?h('p',null,d.details):null);
+ return h('details',{open:''},h('summary',null,'Decisions log ',h('span',{class:'tag'},String(decisions.length))),owner?adder('decisions',DF,{date:todayS()}):null,l.length?l.map(d=>ecard('decisions',d,DF,view)):h('div',{class:'empty'},'No decisions logged yet.'))}
+
+const VERB={add:'added',update:'edited',delete:'removed',revert:'reverted'},CNAME={people:'person',tasks:'task',rules:'rank rule',decisions:'decision',events:'event',seats:'seat',users:'user'};
+async function loadHist(){try{const d=await api({op:'history'});hist=d.history||[];render()}catch(e){if(e.auth){doLogout();render()}}}
+function histText(e){
+ if(e.op==='bulk')return e.label;
+ if(e.coll==='seats'){const[k,id]=e.id.split(':'),i=BK.indexOf(k);return 'set '+(i<0?e.id:PL.branches[i].n+' · '+((seatDefs(i).find(x=>x[0]===id)||[0,id])[1]))+' to '+e.label}
+ return VERB[e.op]+' '+CNAME[e.coll]+' “'+e.label+'”'+(e.sum?' ('+e.sum+')':'')}
+function historyTab(){
+ const out=h('div',null,...H2('Change history','Every change made while logged in, newest first.'+(me&&me.role==='owner'?' As owner you can revert additions, edits and removals.':'')));
+ if(!hist.length){out.append(h('div',{class:'card empty'},'No changes recorded yet.'));return out}
+ const own=me&&me.role==='owner';
+ out.append(tbl(['When','Who','Change',''],hist.map(e=>h('tr',null,h('td',{style:'white-space:nowrap'},new Date(e.t).toLocaleString()),h('td',null,e.who),h('td',null,histText(e)),h('td',null,e.reverted?h('span',{class:'badge'},'Reverted'):own&&['add','update','delete'].includes(e.op)&&e.coll!=='users'?armBtn('Revert',()=>write({op:'revert',hid:e.hid})):''))),720));
+ return out}
+
+const SC=[['hr','High Ranks, general tasks and anything not tied to a branch'],['tf',COUNCILS[0]+': its council, Jedi Assault Team, committees and seats'],['pk',COUNCILS[1]+': its council, Temple Guard, committees and seats'],['la',COUNCILS[2]+': its council, Jedi Shadows, committees and seats'],['events','All events'],['planner','Decisions log']];
+async function loadUsers(){try{const d=await api({op:'users'});users=d.users||[];render()}catch(e){if(e.auth){doLogout();render()}}}
+function userCard(u){
+ const v={name:u.name||'',username:u.username||'',password:'',scopes:[...(u.scopes||[])]};
+ const f=(k,ph,ty)=>h('input',{type:ty||'text',placeholder:ph,value:v[k],autocomplete:'off',onchange:e=>{v[k]=e.target.value.trim()}});
+ const cb=SC.map(([k,l])=>h('label',{class:'sub',style:'display:flex;gap:6px;align-items:flex-start'},h('input',{type:'checkbox',...(v.scopes.includes(k)?{checked:''}:{}),onchange:e=>{v.scopes=v.scopes.filter(x=>x!==k);if(e.target.checked)v.scopes.push(k)}}),l));
+ return h('div',{class:u.id?'task':'card',style:u.id?'':'margin:12px 0;display:grid;gap:8px'},h('div',{class:'trow'},f('name','Display name'),f('username','username'),f('password',u.id?'New password (optional)':'Password (6+ characters)','password')),h('div',{style:'display:grid;gap:4px'},cb),
+  h('div',{class:'trow'},h('button',{class:'btn',onclick:()=>write({op:'userSave',user:{id:u.id,...v}})},u.id?'Save':'Add user'),u.id?armBtn('Delete user',()=>write({op:'userDel',id:u.id})):null))}
+function usersTab(){
+ const out=h('div',null,...H2('Users','Give each lead their own login. The owner password (the ADMIN_PASSWORD secret) always has access to everything, and only it can manage users and revert history.'));
+ if(!me||me.role!=='owner'){out.append(h('div',{class:'card empty'},'Only the owner can manage users.'));return out}
+ out.append(h('h3',{class:'gh'},'Add a user'),userCard({}),h('h3',{class:'gh'},'Users ',h('small',null,'('+users.length+')')));
+ out.append(users.length?h('div',null,users.map(userCard)):h('div',{class:'card empty'},'No users yet.'));
+ return out}
+const TABS={planner,ranks:ranksTab,seats:seatsTab,events:eventsTab,history:historyTab,users:usersTab};
+function body(){
+ if(err)return h('div',{class:'card empty'},'Could not load the tracker. Refresh the page to try again.');
+ if(loading)return h('div',{class:'card empty'},'Loading the tracker…');
+ return tab==='overview'?overview():tab==='roadmap'?roadmap():(TABS[tab]||(()=>section(tab)))();
+}
+function render(){$('#app').replaceChildren(header(),tabs(),body())}
+async function pull(){
+ try{const r=await fetch('/api/people',{cache:'no-store'});if(!r.ok)throw 0;const d=await r.json();loading=false;err='';apply(d)}
+ catch{if(loading){loading=false;err='x';render()}}
+}
+render();
+(async()=>{
+ try{const a=JSON.parse(sessionStorage.getItem('tjo-auth')||'null');if(a){const d=await api({op:'check'},a[1],a[0]);usr=a[0];pw=a[1];owner=true;loading=false;apply(d)}}catch{try{sessionStorage.removeItem('tjo-auth')}catch{}}
+ await pull();render();
+ setInterval(()=>{if(!typing()&&!busy&&!document.hidden)pull()},15000);
+})();
+</script>
+</body>
+</html>

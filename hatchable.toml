@@ -1,0 +1,4 @@
+# Owner password. Set its value in the Hatchable setup prompt after deploy (never put it in code).
+[[secret]]
+key = "ADMIN_PASSWORD"
+description = "Owner password for the TJO Tracker (full access, user management, history revert)"
