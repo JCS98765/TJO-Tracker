@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Jedi Order: Public Roster</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6fb;--card:#fff;--ink:#1b2033;--mut:#667089;--line:#dfe3ee;--acc:#3b6fe0}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#0d1120;--card:#171c2e;--ink:#e8ebf5;--mut:#9aa2bd;--line:#273049;--acc:#6aa0ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px 48px}h1,h2{font-family:Georgia,serif;margin:0}h1{font-size:clamp(22px,4vw,30px)}h2{font-size:18px;margin:26px 0 8px}
+.sub,.mut{color:var(--mut)}.sub{margin:4px 0 0}a{color:var(--acc)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card b{display:block}.card span{color:var(--mut);font-size:13px}
+.ev{margin-bottom:8px}.empty{color:var(--mut)}
+</style></head><body><div class="wrap">
+<h1>The Jedi Order: Public Roster</h1>
+<p class="sub">Read-only. <a href="/">Open the tracker</a></p>
+<div id="app"><p class="empty">Loading…</p></div></div>
+<script>
+const $=document.getElementById('app'),el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const grid=l=>{const g=el('div','grid');l.forEach(p=>{const c=el('div','card');c.append(el('b',0,p.name),el('span',0,p.rank||'—'));g.append(c)});return g};
+fetch('/api/public').then(r=>{if(!r.ok)throw 0;return r.json()}).then(d=>{
+  $.replaceChildren();
+  const by=(k,v)=>d.people.filter(p=>p[k]===v);
+  const add=(title,list)=>{if(!list.length)return;$.append(el('h2',0,title+' ('+list.length+')'),grid(list))};
+  add('High Ranks',d.people.filter(p=>p.hr));
+  [...new Set(d.people.map(p=>p.council).filter(Boolean))].sort().forEach(c=>add(c,by('council',c)));
+  [...new Set(d.people.map(p=>p.division).filter(Boolean))].sort().forEach(c=>add(c,by('division',c)));
+  $.append(el('h2',0,'Upcoming events'));
+  if(!d.events.length)$.append(el('p','empty','No upcoming events.'));
+  d.events.forEach(e=>{const c=el('div','card ev');c.append(el('b',0,e.title),el('span',0,[e.date,e.time,e.type,e.host&&'Host: '+e.host].filter(Boolean).join(' · ')));if(e.details)c.append(el('p','mut',e.details));$.append(c)});
+}).catch(()=>{$.replaceChildren(el('p','empty','Could not load the roster. Refresh to try again.'))});
+</script></body></html>

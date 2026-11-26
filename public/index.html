@@ -82,6 +82,20 @@ details>summary.gh{cursor:pointer}
 .pl .flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0}.pl .flow span.s{padding:5px 11px;border-radius:99px;background:var(--acc);color:#fff;font-weight:600;font-size:13px}.pl .flow span.a{color:var(--mut)}
 .pl .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}.pl .tbl table{min-width:640px}
 .pl .tbl td,.pl .tbl th{vertical-align:top}
+@media (max-width:720px){
+ input,select,textarea{font-size:16px}
+ .scroll:has(table.stack){overflow:visible;border:0;background:none}
+ table.stack,table.stack tbody{display:block;min-width:0!important}
+ table.stack thead{display:none}
+ table.stack tr{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+ table.stack tr.hidden{display:none}
+ table.stack td{display:block;border:0;padding:0;min-width:0}
+ table.stack td::before{content:attr(data-label);display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin-bottom:2px}
+ table.stack td[data-label="#"],table.stack td[data-label=""]::before{display:none}
+ table.stack td[data-label="Name"],table.stack td[data-label="Notes"],table.stack td[data-label="Roblox username"]{grid-column:1/-1}
+ .tools>input[type=text]{flex:1 1 100%}
+}
+input[type=checkbox]{width:18px;height:18px}
 </style>
 </head>
 <body>
@@ -117,6 +131,7 @@ const PRI=[['low','Low'],['normal','Normal'],['high','High']];
 const $=s=>document.querySelector(s);
 function h(t,p,...c){const e=document.createElement(t);for(const k in p||{}){const v=p[k];if(k==='class')e.className=v;else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(k==='value')e.value=v;else e.setAttribute(k,v)}for(const x of c.flat())if(x!=null)e.append(x);return e}
 let owner=false,me=null,usr='',seats={},rules=[],decisions=[],events=[],users=[],hist=[],rf='*',evf='*',pw='',rows=[],tasks=[],tab='overview',cfilter='',dfilter='',search='',loading=true,err='',dirty=false,busy=0,last='',tfA='*',tfC='*',tfT='*',doneOpen=false;
+const picked=new Set(),rbx={},rc={busy:false,done:0,total:0,res:{},only:true,err:'',ran:false};
 function norm(r){
  const o={...r},g=o.group||'',fd=nd;
  if(CMAP[o.section]){if(o.council===undefined)o.council=CMAP[o.section];o.section='council'}
@@ -152,7 +167,7 @@ async function write(body){
 }
 function save(id,patch){const r=rows.find(x=>x.id===id);if(r)Object.assign(r,patch);write({op:'update',id,patch})}
 function saveTask(id,patch){const t=tasks.find(x=>x.id===id);if(t)Object.assign(t,patch);write({op:'updateTask',id,patch})}
-function doLogout(){owner=false;me=null;pw='';usr='';users=[];hist=[];try{sessionStorage.removeItem('tjo-auth')}catch{}if(tab==='history'||tab==='users')tab='overview'}
+function doLogout(){owner=false;me=null;pw='';usr='';users=[];hist=[];try{sessionStorage.removeItem('tjo-auth')}catch{}if(tab==='history'||tab==='users'||tab==='rankcheck')tab='overview'}
 async function login(){
  const u0=prompt('Username (leave blank for the owner)');if(u0===null)return;
  const u=u0.trim().toLowerCase(),p=prompt(u?'Password for '+u:'Owner password');if(!p)return;
@@ -172,12 +187,12 @@ function armBtn(label,fn){return h('button',{class:'btn ghost',onclick:e=>{const
 
 function header(){
  return h('div',{class:'top'},
-  h('div',null,h('h1',null,'The Jedi Order: Tracker'),h('p',{class:'sub'},'Personnel review for TJO. Updates appear for everyone within seconds.')),
+  h('div',null,h('h1',null,'The Jedi Order: Tracker'),h('p',{class:'sub'},'Personnel review for TJO. Updates appear for everyone within seconds. ',h('a',{href:'/roster.html',style:'color:var(--acc)'},'Public roster'))),
   owner?h('button',{class:'mode edit',onclick:logout,title:'Click to log out'},(me?me.name:'Edit')+' · log out'):h('button',{class:'mode',onclick:login},'View only · Log in'));
 }
 function tabs(){
  const mk=(id,l,n)=>h('button',{class:'tab'+(tab===id?' on':''),onclick:()=>go(id)},l,n!=null?h('small',null,String(n)):null);
- return h('div',{class:'tabs'},mk('overview','Overview'),mk('hr','High Ranks',members('hr').length),mk('councils','Councils',members('councils').length),mk('divisions','Divisions',members('divisions').length),mk('roadmap','Roadmap',tasks.filter(t=>t.status!=='done').length),mk('ranks','Rank map'),mk('seats','Seats'),mk('events','Events'),mk('planner','Planner'),owner?mk('history','History'):null,me&&me.role==='owner'?mk('users','Users'):null);
+ return h('div',{class:'tabs'},mk('overview','Overview'),mk('hr','High Ranks',members('hr').length),mk('councils','Councils',members('councils').length),mk('divisions','Divisions',members('divisions').length),mk('roadmap','Roadmap',tasks.filter(t=>t.status!=='done').length),mk('ranks','Rank map'),mk('seats','Seats'),mk('events','Events'),mk('planner','Planner'),owner?mk('rankcheck','Rank check'):null,owner?mk('history','History'):null,me&&me.role==='owner'?mk('users','Users'):null);
 }
 function overview(){
  const all=counts(rows);
@@ -194,6 +209,28 @@ function overview(){
   h('div',{style:'height:12px'}),h('div',{class:'grid'},cards),
   h('p',{class:'sub',style:'margin-top:14px'},owner?'Open a tab to add people and set their status. Everything you change saves for all viewers.':'You can view everything here, but only the tracker owner can make changes.'));
 }
+const chk=(on,fn)=>{const e=h('input',{type:'checkbox',onchange:fn});e.checked=on;return e};
+const rbxImg=r=>{const a=rbx[(r.roblox||'').toLowerCase()];return a?h('img',{src:a,alt:'',width:'28',height:'28',style:'border-radius:50%;vertical-align:middle;margin-right:6px'}):null};
+async function lookup(r){
+ toast('Looking up '+r.roblox+'…');
+ try{const x=await(await fetch('/api/roblox?u='+encodeURIComponent(r.roblox))).json();
+  if(x.error)return toast(x.error==='username'?'That doesn’t look like a Roblox username.':'Roblox didn’t respond. Try again soon.');
+  if(!x.found)return toast('No Roblox user named “'+r.roblox+'”.');
+  rbx[x.name.toLowerCase()]=x.avatar;
+  if(x.name!==r.roblox)save(r.id,{roblox:x.name});
+  toast('Found '+x.displayName+' (@'+x.name+')');render();
+ }catch{toast('Lookup failed. Check your connection.')}
+}
+function bulk(ids,patch){
+ ids.forEach(id=>{const r=rows.find(x=>x.id===id);if(r)Object.assign(r,patch)});picked.clear();render();
+ write({op:'bulk',ids,patch}).then(()=>toast('Updated '+ids.length+' '+(ids.length===1?'person':'people')+'.'));
+}
+function bulkBar(){
+ const ids=[...picked].filter(id=>rows.some(r=>r.id===id));
+ if(!owner||!ids.length)return null;
+ const mk=(k,l,opts)=>{const s=h('select',{onchange:e=>{if(e.target.value!=='*')bulk(ids,{[k]:e.target.value})}},h('option',{value:'*'},l),...opts.map(o=>h('option',{value:o[0]},o[1])));s.value='*';return s};
+ return h('div',{class:'tools card',style:'padding:10px'},h('b',null,ids.length+' selected'),mk('status','Set status…',ST),mk('decision','Set decision…',DEC),mk('hosts','Set hosts events…',HOST),mk('council','Set council…',[['','None'],...COUNCILS.map(x=>[x,x])]),mk('division','Set division…',[['','None'],...DIVS.map(x=>[x,x])]),h('button',{class:'btn ghost',onclick:()=>{picked.clear();render()}},'Clear'));
+}
 function section(id){
  const I=TABINFO[id],f=id==='councils'?cfilter:id==='divisions'?dfilter:'';
  const all=members(id,''),list=members(id,f).sort((a,b)=>(a.created||0)-(b.created||0));
@@ -207,9 +244,10 @@ function section(id){
  if(owner){const ni=h('input',{type:'text',placeholder:'New person name'});
   const add=()=>{const n=ni.value.trim();if(!n)return;ni.value='';const person={name:n,section:I.sec};if(I.field)person[I.field]=f;write({op:'add',person})};
   ni.addEventListener('keydown',e=>{if(e.key==='Enter')add()});tools.append(ni,h('button',{class:'btn',onclick:add},'Add person'))}
- out.append(tools);
+ out.append(tools);{const bb=bulkBar();if(bb)out.append(bb)}
  const copts=[['','None'],...COUNCILS.map(x=>[x,x])],dopts=[['','None'],...DIVS.map(x=>[x,x])];
- const head=h('tr',null,['#','Name',id!=='hr'?'Listed as':null,'Roblox username','Current rank','Council','Division','Status','Last active','Hosts events','Decision','Notes',''].filter(Boolean).map(x=>h('th',null,x)));
+ const cols=[owner?'Select':null,'#','Name',id!=='hr'?'Listed as':null,'Roblox username','Current rank','Council','Division','Status','Last active','Hosts events','Decision','Notes',''].filter(x=>x!==null);
+ const head=h('tr',null,cols.map(x=>x==='Select'?h('th',null,chk(false,e=>{list.forEach(r=>e.target.checked?picked.add(r.id):picked.delete(r.id));render()})):h('th',null,x)));
  const body=list.map((r,i)=>{
   const tr=h('tr',{'data-q':[r.name,r.roblox,r.rank,r.notes,r.council,r.division].join(' ').toLowerCase()});
   tr.classList.toggle('hidden',!!search&&!tr.dataset.q.includes(search));
@@ -218,12 +256,12 @@ function section(id){
   const S=(opts,k,def,badge)=>owner?sel(opts,r[k]||def,v=>save(r.id,{[k]:v}),badge):h('span',{class:'badge '+(badge?(r[k]||def):'')},label(opts,r[k]||def));
   const own=id==='hr'||r.section===I.sec;
   const del=owner?(own?armBtn('Remove',()=>{rows=rows.filter(x=>x.id!==r.id);render();write({op:'delete',id:r.id})}):armBtn('Unlist',()=>{save(r.id,{[I.field]:''});render()})):'';
-  const cells=[h('td',{style:'color:var(--mut)'},String(i+1)),h('td',null,T('name','Name'))];
+  const cells=[...(owner?[h('td',null,chk(picked.has(r.id),e=>{e.target.checked?picked.add(r.id):picked.delete(r.id);render()}))]:[]),h('td',{style:'color:var(--mut)'},String(i+1)),h('td',null,T('name','Name'))];
   if(id!=='hr')cells.push(h('td',null,h('span',{class:'badge'},TABINFO[r.section==='council'?'councils':r.section==='division'?'divisions':'hr'].label)));
-  cells.push(h('td',null,T('roblox','Username')),h('td',null,T('rank','Type rank')),h('td',null,S(copts,'council','',false)),h('td',null,S(dopts,'division','',false)),
+  cells.push(h('td',null,rbxImg(r),T('roblox','Username'),owner&&r.roblox?h('button',{class:'btn ghost',type:'button',onclick:()=>lookup(r)},'Look up'):null),h('td',null,T('rank','Type rank')),h('td',null,S(copts,'council','',false)),h('td',null,S(dopts,'division','',false)),
    h('td',null,S(ST,'status','unreviewed',true)),h('td',null,T('lastActive','','date')),h('td',null,S(HOST,'hosts','',false)),h('td',null,S(DEC,'decision','undecided',true)),h('td',null,T('notes','Notes')),h('td',null,del));
-  tr.append(...cells);return tr});
- out.append(list.length?h('div',{class:'scroll'},h('table',null,h('thead',null,head),h('tbody',null,body))):h('div',{class:'card empty'},owner?'No one here yet. Add the first person above.':'Nobody has been added to this list yet.'));
+  cells.forEach((c,j)=>c.dataset.label=cols[j]||'');tr.append(...cells);return tr});
+ out.append(list.length?h('div',{class:'scroll'},h('table',{class:'stack'},h('thead',null,head),h('tbody',null,body))):h('div',{class:'card empty'},owner?'No one here yet. Add the first person above.':'Nobody has been added to this list yet.'));
  if(id!=='hr')out.append(h('p',{class:'sub',style:'margin-top:10px'},'People marked "High Rank" are managed on the High Ranks tab. Their status is the same record everywhere. "Unlist" only removes them from this '+I.label.toLowerCase()+'.'));
  return out;
 }
@@ -431,7 +469,44 @@ function usersTab(){
  out.append(h('h3',{class:'gh'},'Add a user'),userCard({}),h('h3',{class:'gh'},'Users ',h('small',null,'('+users.length+')')));
  out.append(users.length?h('div',null,users.map(userCard)):h('div',{class:'card empty'},'No users yet.'));
  return out}
-const TABS={planner,ranks:ranksTab,seats:seatsTab,events:eventsTab,history:historyTab,users:usersTab};
+const rcz=s=>String(s||'').trim().toLowerCase();
+async function runCheck(){
+ const names=[...new Set(rows.filter(r=>r.roblox).map(r=>r.roblox))];
+ Object.assign(rc,{busy:true,done:0,total:names.length,res:{},err:'',ran:true});render();
+ for(let i=0;i<names.length&&!rc.err;i+=25){
+  try{const r=await fetch('/api/roblox-group',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({usernames:names.slice(i,i+25)})});
+   const d=await r.json().catch(()=>({}));
+   if(!r.ok){rc.err=d.error==='no_group'?'Set the Roblox group ID first (Hatchable console → Configure).':'Roblox didn’t respond. Try again in a minute.';break}
+   Object.assign(rc.res,d.results);rc.done=Math.min(names.length,i+25);render();
+  }catch{rc.err='Check failed. Check your connection.'}
+ }
+ rc.busy=false;render();
+}
+function rankCheckTab(){
+ const out=h('div',null,h('h2',{style:'font-size:20px'},'Rank check'),h('p',{class:'sub'},'Compares each person’s “Current rank” with their role in the Roblox group. The rank text must match the Roblox role name (capitals ignored).'));
+ const go_=h('button',{class:'btn',onclick:runCheck},rc.busy?'Checking '+rc.done+'/'+rc.total+'…':rc.ran?'Check again':'Check against Roblox');go_.disabled=rc.busy;
+ out.append(h('div',{class:'tools'},go_));
+ if(rc.err)out.append(h('div',{class:'card empty'},rc.err));
+ if(!rc.ran)return out;
+ const list=rows.filter(r=>r.roblox).map(r=>{const x=rc.res[rcz(r.roblox)];
+  const st=!x?'wait':x.error?'error':!x.found?'missing':!x.inGroup?'out':rcz(x.role)===rcz(r.rank)?'ok':'diff';return{r,x,st}});
+ const L={ok:'Match',diff:'Mismatch',out:'Not in group',missing:'Username not found',error:'Couldn’t check',wait:'Waiting…'};
+ const n=k=>list.filter(o=>o.st===k).length,none=rows.filter(r=>!r.roblox).length;
+ out.append(h('div',{class:'chips',style:'margin:8px 0'},...['ok','diff','out','missing','error'].map(k=>h('span',{class:'chip'},h('i',{class:'dot '+(k==='ok'?'c-active':k==='diff'?'c-semi':'c-inactive')}),n(k)+' '+L[k].toLowerCase()))),
+  none?h('p',{class:'sub'},none+' '+(none===1?'person has':'people have')+' no Roblox username and weren’t checked.'):null);
+ const fix=list.filter(o=>o.st==='diff');
+ const tools=h('div',{class:'tools'},h('button',{class:'fl'+(rc.only?' on':''),onclick:()=>{rc.only=true;render()}},'Issues only'),h('button',{class:'fl'+(!rc.only?' on':''),onclick:()=>{rc.only=false;render()}},'All'));
+ if(fix.length)tools.append(armBtn('Use group rank for all '+fix.length+' mismatches',()=>{const items=fix.map(o=>({id:o.r.id,rank:o.x.role}));items.forEach(it=>Object.assign(rows.find(r=>r.id===it.id),{rank:it.rank}));render();write({op:'setRanks',items}).then(()=>toast('Updated '+items.length+' ranks.'))}));
+ out.append(tools);
+ const show=list.filter(o=>!rc.only||o.st!=='ok').sort((a,b)=>(a.st==='ok')-(b.st==='ok')||a.r.name.localeCompare(b.r.name));
+ if(!show.length){out.append(h('div',{class:'card empty'},rc.busy?'Checking…':'Everyone checked matches the group.'));return out}
+ out.append(tbl(['Name','Roblox','Tracker rank','Group rank','Result',''],show.map(({r,x,st})=>h('tr',null,
+  h('td',null,r.name),h('td',null,r.roblox),h('td',null,r.rank||'—'),h('td',null,x&&x.inGroup?x.role:'—'),
+  h('td',null,h('span',{class:'badge '+(st==='ok'?'active':st==='diff'?'semi':st==='wait'?'':'inactive')},L[st])),
+  h('td',null,st==='diff'?h('button',{class:'btn ghost',onclick:()=>{save(r.id,{rank:x.role});render()}},'Use group rank'):null))),640));
+ return out;
+}
+const TABS={planner,ranks:ranksTab,seats:seatsTab,events:eventsTab,history:historyTab,rankcheck:rankCheckTab,users:usersTab};
 function body(){
  if(err)return h('div',{class:'card empty'},'Could not load the tracker. Refresh the page to try again.');
  if(loading)return h('div',{class:'card empty'},'Loading the tracker…');

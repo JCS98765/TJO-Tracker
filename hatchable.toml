@@ -2,3 +2,12 @@
 [[secret]]
 key = "ADMIN_PASSWORD"
 description = "Owner password for the TJO Tracker (full access, user management, history revert)"
+
+# Shown in the Hatchable console under Configure. Used by the Rank check tab.
+[[config]]
+name = "roblox_group_id"
+type = "number"
+label = "Roblox group ID"
+help = "The number in your group's URL: roblox.com/groups/<ID>/..."
+integer = true
+min = 1

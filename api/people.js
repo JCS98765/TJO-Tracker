@@ -303,6 +303,23 @@ async function handle(req) {
       Object.assign(p, np); n++;
     }
     if (n) { dirty.add("people"); logs.push({ coll: "people", op: "bulk", id: "", label: `Applied rank rules to ${n} ${n === 1 ? "person" : "people"}` }); }
+  } else if (op === "bulk") {
+    // One patch applied to many people; each change is checked and logged (and revertable) individually.
+    const ids = Array.isArray(b.ids) ? b.ids.slice(0, 200) : [];
+    const keys = ["status", "decision", "hosts", "council", "division"];
+    const patch = Object.fromEntries(Object.entries(b.patch || {}).filter(([k]) => keys.includes(k)));
+    if (!ids.length || !Object.keys(patch).length) return fail("op");
+    for (const id of ids) {
+      const r = change(S, a, "people", "update", { id, patch }, dirty);
+      if (r && r.coll) logs.push(r);
+    }
+  } else if (op === "setRanks") {
+    // [{id, rank}] -> sets each person's current rank (used by the Rank check tab). Checked and logged per person.
+    for (const it of (Array.isArray(b.items) ? b.items : []).slice(0, 200)) {
+      if (!it || typeof it.id !== "string") continue;
+      const r = change(S, a, "people", "update", { id: it.id, patch: { rank: it.rank } }, dirty);
+      if (r && r.coll) logs.push(r);
+    }
   } else if (op === "revert") {
     if (!owner) return fail("perm");
     const h = await hist();
